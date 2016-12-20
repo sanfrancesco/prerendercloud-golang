@@ -1,9 +1,11 @@
+2016-12-19 - this is a fork that changes the API URL to prerender.cloud (a chromium alternative to prerender.io, which uses phantomJS)
+
 Prerender Go
 ===========================
 
 Bots are constantly hitting your site, and a lot of times they're unable to render
 javascript.  Prerender.io is awesome, and allows a headless browser to render you
-page.  
+page.
 
 This middleware allows you to intercept requests from crawlers and route them
 to an external Prerender Service to retrieve the static HTML for the requested page.

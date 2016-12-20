@@ -32,12 +32,12 @@ type Options struct {
 // service, obtaining a Token from the environment variable PRERENDER_TOKEN.
 // No blacklist/whitelist is created.
 func NewOptions() *Options {
-	url, _ := url.Parse("https://service.prerender.io/")
+	url, _ := url.Parse("https://service.prerender.cloud/")
 	return &Options{
-		PrerenderURL: url,
-		Token:        os.Getenv("PRERENDER_TOKEN"),
-		BlackList:    nil,
-		WhiteList:    nil,
+		PrerenderURL:   url,
+		Token:          os.Getenv("PRERENDER_TOKEN"),
+		BlackList:      nil,
+		WhiteList:      nil,
 		UsingAppEngine: false,
 	}
 }

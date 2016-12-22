@@ -77,6 +77,11 @@ func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 		return false
 	}
 
+	// No user agent, don't prerender
+	if userAgent == "prerendercloud" {
+		return false
+	}
+
 	// Not a GET or HEAD request, don't prerender
 	if or.Method != "GET" && or.Method != "HEAD" {
 		return false

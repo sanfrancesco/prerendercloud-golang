@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	e "github.com/jqatampa/gadget-arm/errors"
+	"github.com/valyala/fasthttp"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/urlfetch"
 )
@@ -139,6 +141,27 @@ func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 	return isRequestingPrerenderedPage
 }
 
+func (p *Prerender) buildURLforFastHttp(ctx *fasthttp.RequestCtx) string {
+	url := p.Options.PrerenderURL
+
+	if !strings.HasSuffix(url.String(), "/") {
+		url.Path = url.Path + "/"
+	}
+
+	protocol := string(ctx.URI().Scheme())
+
+	if len(protocol) == 0 {
+		protocol = "http"
+	}
+
+	if fp := string(ctx.Request.Header.Peek("X-Forwarded-Proto")); fp != "" {
+		protocol = strings.Split(fp, ",")[0]
+	}
+
+	return url.String() + protocol + "://" + string(ctx.Host()) + string(ctx.Path()) + "?" + string(ctx.URI().QueryString())
+
+}
+
 func (p *Prerender) buildURL(or *http.Request) string {
 	url := p.Options.PrerenderURL
 
@@ -166,6 +189,32 @@ func (p *Prerender) buildURL(or *http.Request) string {
 	apiURL := url.String() + protocol + "://" + or.Host + or.URL.Path + "?" +
 		or.URL.RawQuery
 	return apiURL
+}
+
+func (p *Prerender) PreRenderHandlerFastHttp(ctx *fasthttp.RequestCtx) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", p.buildURLforFastHttp(ctx), nil)
+	e.Check(err)
+
+	if p.Options.Token != "" {
+		ctx.Response.Header.Set("X-Prerender-Token", p.Options.Token)
+	}
+
+	res, err := client.Do(req)
+
+	e.Check(err)
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	e.Check(err)
+
+	if len(res.Header["Content-Type"]) > 0 {
+		ctx.SetContentType(res.Header["Content-Type"][0])
+	}
+
+	ctx.SetBody(body)
+
 }
 
 // PreRenderHandler is a net/http compatible handler that proxies a request to

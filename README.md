@@ -1,4 +1,7 @@
-2016-12-19 - this is a fork that changes the API URL to prerender.cloud (a chromium alternative to prerender.io, which uses phantomJS)
+2016-12-19 - this is a fork of https://github.com/tampajohn/goprerender that:
+
+* changes the default API URL to prerender.cloud (a chromium alternative to prerender.io, which uses phantomJS)
+* adds support for fasthttp
 
 Prerender Go
 ===========================
@@ -15,10 +18,12 @@ Prerender adheres to google's `_escaped_fragment_` proposal, which we recommend 
 - If you use hash urls (#), change them to the hash-bang (#!)
 - That's it! Perfect SEO on javascript pages.
 
-## Features
-I tried to replicate the features found in the [Prerender-node](https://github.com/prerender/prerender-node/)
-middleware.
+## Set your API token via env var
+(get token after signing up at prerender.cloud)
 
+```bash
+PRERENDER_TOKEN="mySecretTokenFromPrerenderCloud" go run main.go
+```
 ## Using it in [negroni](https://github.com/codegangsta/negroni)
 ``` go
 package main
@@ -36,6 +41,39 @@ func main() {
 	n.Use(prerender.NewOptions().NewPrerender())
 	n.Use(negroni.NewStatic(http.Dir(".")))
 	n.Run(":8080")
+}
+
+```
+
+## Using it in [fasthttp](https://github.com/valyala/fasthttp)
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/sanfrancesco/goprerender"
+	"github.com/valyala/fasthttp"
+)
+
+func main() {
+
+	requestHandler := func(ctx *fasthttp.RequestCtx) {
+		if string(ctx.UserAgent()) != "prerendercloud" {
+			prerender.NewOptions().NewPrerender().PreRenderHandlerFastHttp(ctx)
+		} else {
+			ctx.SetContentType("text/html")
+			fmt.Fprintf(ctx, `
+        <div id='root'></div>
+        <script type='text/javascript'>
+          document.getElementById('root').innerHTML = "hello";
+        </script>
+      `)
+		}
+	}
+
+	fasthttp.ListenAndServe(":8080", requestHandler)
 }
 
 ```

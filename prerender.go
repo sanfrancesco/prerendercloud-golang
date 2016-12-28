@@ -192,29 +192,30 @@ func (p *Prerender) buildURL(or *http.Request) string {
 }
 
 func (p *Prerender) PreRenderHandlerFastHttp(ctx *fasthttp.RequestCtx) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", p.buildURLforFastHttp(ctx), nil)
-	e.Check(err)
+	fasthttp.CompressHandler(func(ctx *fasthttp.RequestCtx) {
+		client := &http.Client{}
+		req, err := http.NewRequest("GET", p.buildURLforFastHttp(ctx), nil)
+		e.Check(err)
 
-	if p.Options.Token != "" {
-		ctx.Response.Header.Set("X-Prerender-Token", p.Options.Token)
-	}
+		if p.Options.Token != "" {
+			ctx.Response.Header.Set("X-Prerender-Token", p.Options.Token)
+		}
 
-	res, err := client.Do(req)
+		res, err := client.Do(req)
 
-	e.Check(err)
+		e.Check(err)
 
-	defer res.Body.Close()
+		defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
-	e.Check(err)
+		body, err := ioutil.ReadAll(res.Body)
+		e.Check(err)
 
-	if len(res.Header["Content-Type"]) > 0 {
-		ctx.SetContentType(res.Header["Content-Type"][0])
-	}
+		if len(res.Header["Content-Type"]) > 0 {
+			ctx.SetContentType(res.Header["Content-Type"][0])
+		}
 
-	ctx.SetBody(body)
-
+		ctx.SetBody(body)
+	})(ctx)
 }
 
 // PreRenderHandler is a net/http compatible handler that proxies a request to

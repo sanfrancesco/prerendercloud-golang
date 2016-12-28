@@ -65,6 +65,28 @@ func (p *Prerender) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http
 	}
 }
 
+func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
+	userAgent := strings.ToLower(string(ctx.UserAgent()))
+	reqURL := strings.ToLower(string(ctx.Path()))
+	method := strings.ToLower(string(ctx.Method()))
+
+	if userAgent == "" || userAgent == "prerendercloud" {
+		return false
+	}
+
+	if method != "get" && method != "head" {
+		return false
+	}
+
+	for _, extension := range skippedTypes {
+		if strings.HasSuffix(reqURL, strings.ToLower(extension)) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // ShouldPrerender analyzes the request to determine whether it should be routed
 // to a Prerender.io upstream server.
 func (p *Prerender) ShouldPrerender(or *http.Request) bool {

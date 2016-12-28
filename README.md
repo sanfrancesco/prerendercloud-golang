@@ -53,15 +53,18 @@ package main
 import (
 	"fmt"
 
-	"github.com/sanfrancesco/goprerender"
+	prerender "github.com/sanfrancesco/goprerender"
 	"github.com/valyala/fasthttp"
 )
 
 func main() {
 
+	// set the PRERENDER_TOKEN env var when starting this golang binary/executable
+	prerendercloud := prerender.NewOptions().NewPrerender()
+
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
-		if string(ctx.UserAgent()) != "prerendercloud" {
-			prerender.NewOptions().NewPrerender().PreRenderHandlerFastHttp(ctx)
+		if prerendercloud.ShouldPrerenderFastHttp(ctx) {
+			prerendercloud.PreRenderHandlerFastHttp(ctx)
 		} else {
 			ctx.SetContentType("text/html")
 			fmt.Fprintf(ctx, `

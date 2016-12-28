@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/codegangsta/negroni"
-	prerendercloud "github.com/sanfrancesco/goprerender"
+	prerendercloud "github.com/sanfrancesco/prerendercloud-golang"
 )
 
 func main() {

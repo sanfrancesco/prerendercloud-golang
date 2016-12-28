@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	"github.com/codegangsta/negroni"
-	prerendercloud "github.com/sanfrancesco/goprerender"
+	prerendercloud "github.com/sanfrancesco/prerendercloud-golang"
 )
 
 func main() {
@@ -53,7 +53,7 @@ package main
 import (
 	"fmt"
 
-	prerendercloud "github.com/sanfrancesco/goprerender"
+	prerendercloud "github.com/sanfrancesco/prerendercloud-golang"
 	"github.com/valyala/fasthttp"
 )
 

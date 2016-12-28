@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 
 	e "github.com/jqatampa/gadget-arm/errors"
@@ -25,22 +24,26 @@ import (
 type Options struct {
 	PrerenderURL   *url.URL
 	Token          string
-	BlackList      []regexp.Regexp
-	WhiteList      []regexp.Regexp
 	UsingAppEngine bool
+	BotsOnly       bool
 }
 
 // NewOptions generates a default Options struct pointing to the Prerender.io
 // service, obtaining a Token from the environment variable PRERENDER_TOKEN.
-// No blacklist/whitelist is created.
 func NewOptions() *Options {
-	url, _ := url.Parse("https://service.prerender.cloud/")
+	var url *url.URL
+
+	if os.Getenv("PRERENDER_SERVICE_URL") != "" {
+		url, _ = url.Parse(os.Getenv("PRERENDER_SERVICE_URL"))
+	} else {
+		url, _ = url.Parse("https://service.prerender.cloud/")
+	}
+
 	return &Options{
 		PrerenderURL:   url,
 		Token:          os.Getenv("PRERENDER_TOKEN"),
-		BlackList:      nil,
-		WhiteList:      nil,
 		UsingAppEngine: false,
+		BotsOnly:       false,
 	}
 }
 
@@ -84,16 +87,33 @@ func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
 		}
 	}
 
-	return true
+	if p.Options.BotsOnly {
+		isRequestingPrerenderedPage := false
+		bufferAgent := string(ctx.Request.Header.Peek("X-Bufferbot"))
+
+		// Buffer Agent or requesting an escaped fragment, request prerender
+		if bufferAgent != "" || string(ctx.FormValue("_escaped_fragment_")) != "" {
+			isRequestingPrerenderedPage = true
+		}
+
+		// Crawler, request prerender
+		for _, crawlerAgent := range crawlerUserAgents {
+			if strings.Contains(crawlerAgent, strings.ToLower(userAgent)) {
+				isRequestingPrerenderedPage = true
+				break
+			}
+		}
+
+		return isRequestingPrerenderedPage
+	} else {
+		return true
+	}
 }
 
 // ShouldPrerender analyzes the request to determine whether it should be routed
 // to a Prerender.io upstream server.
 func (p *Prerender) ShouldPrerender(or *http.Request) bool {
-	fmt.Println(or)
 	userAgent := strings.ToLower(or.Header.Get("User-Agent"))
-	bufferAgent := or.Header.Get("X-Bufferbot")
-	isRequestingPrerenderedPage := false
 	reqURL := strings.ToLower(or.URL.String())
 
 	// No user agent, don't prerender
@@ -118,49 +138,27 @@ func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 		}
 	}
 
-	// Buffer Agent or requesting an excaped fragment, request prerender
-	if bufferAgent != "" || or.URL.Query().Get("_escaped_fragment_") != "" {
-		isRequestingPrerenderedPage = true
-	}
-
-	// Cralwer, request prerender
-	for _, crawlerAgent := range crawlerUserAgents {
-		if strings.Contains(crawlerAgent, strings.ToLower(userAgent)) {
+	if p.Options.BotsOnly {
+		bufferAgent := or.Header.Get("X-Bufferbot")
+		isRequestingPrerenderedPage := false
+		// Buffer Agent or requesting an escaped fragment, request prerender
+		if bufferAgent != "" || or.URL.Query().Get("_escaped_fragment_") != "" {
 			isRequestingPrerenderedPage = true
-			break
 		}
+
+		// Cralwer, request prerender
+		for _, crawlerAgent := range crawlerUserAgents {
+			if strings.Contains(crawlerAgent, strings.ToLower(userAgent)) {
+				isRequestingPrerenderedPage = true
+				break
+			}
+		}
+
+		return isRequestingPrerenderedPage
+	} else {
+		return true
 	}
 
-	// If it's a bot/crawler/escaped fragment request apply Blacklist/Whitelist logic
-	if isRequestingPrerenderedPage {
-		if p.Options.WhiteList != nil {
-			matchFound := false
-			for _, val := range p.Options.WhiteList {
-				if val.MatchString(reqURL) {
-					matchFound = true
-					break
-				}
-			}
-			if !matchFound {
-				return false
-			}
-		}
-
-		if p.Options.BlackList != nil {
-			matchFound := false
-			for _, val := range p.Options.BlackList {
-				if val.MatchString(reqURL) {
-					matchFound = true
-					break
-				}
-			}
-			if matchFound {
-				return false
-			}
-		}
-	}
-
-	return isRequestingPrerenderedPage
 }
 
 func (p *Prerender) buildURLforFastHttp(ctx *fasthttp.RequestCtx) string {

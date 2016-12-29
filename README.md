@@ -1,10 +1,8 @@
-2016-12-19 - this is a fork of https://github.com/tampajohn/goprerender that:
-
-* changes the default API URL to prerender.cloud (a chromium alternative to prerender.io, which uses phantomJS)
-* adds support for fasthttp (in addition to the original negroni support)
-* prerenders all user-agents by default (but adds an option for BotsOnly)
+![image](https://cloud.githubusercontent.com/assets/22159102/21554484/9d542f5a-cdc4-11e6-8c4c-7730a9e9e2d1.png)
 
 # prerendercloud-golang
+
+[![CircleCI](https://circleci.com/gh/sanfrancesco/prerendercloud-golang.svg?style=svg)](https://circleci.com/gh/sanfrancesco/prerendercloud-golang)
 
 Includes [negroni](https://github.com/codegangsta/negroni) middleware, and a [fasthttp](https://github.com/valyala/fasthttp) handler for prerendering javascript web pages/apps (single page apps or SPA) with [https://www.prerender.cloud/](https://www.prerender.cloud/)
 

@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
+	"regexp"
 	"strings"
 
 	e "github.com/jqatampa/gadget-arm/errors"
@@ -60,7 +62,6 @@ func (o *Options) NewPrerender() *Prerender {
 
 // ServeHTTP allows Prerender to act as a Negroni middleware.
 func (p *Prerender) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	fmt.Println("Prerender")
 	if p.ShouldPrerender(r) {
 		p.PreRenderHandler(rw, r)
 	} else if next != nil {
@@ -70,7 +71,6 @@ func (p *Prerender) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http
 
 func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
 	userAgent := strings.ToLower(string(ctx.UserAgent()))
-	reqURL := strings.ToLower(string(ctx.Path()))
 	method := strings.ToLower(string(ctx.Method()))
 
 	if userAgent == "" || userAgent == "prerendercloud" {
@@ -81,10 +81,8 @@ func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
 		return false
 	}
 
-	for _, extension := range skippedTypes {
-		if strings.HasSuffix(reqURL, strings.ToLower(extension)) {
-			return false
-		}
+	if !prerenderableExtension(string(ctx.Path())) {
+		return false
 	}
 
 	if p.Options.BotsOnly {
@@ -114,7 +112,6 @@ func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
 // to a Prerender.io upstream server.
 func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 	userAgent := strings.ToLower(or.Header.Get("User-Agent"))
-	reqURL := strings.ToLower(or.URL.String())
 
 	// No user agent, don't prerender
 	if userAgent == "" {
@@ -131,11 +128,8 @@ func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 		return false
 	}
 
-	// Static resource, don't prerender
-	for _, extension := range skippedTypes {
-		if strings.HasSuffix(reqURL, strings.ToLower(extension)) {
-			return false
-		}
+	if !prerenderableExtension(or.URL.EscapedPath()) {
+		return false
 	}
 
 	if p.Options.BotsOnly {
@@ -161,6 +155,31 @@ func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 
 }
 
+func prerenderableExtension(fullpath string) bool {
+	basename := path.Base(fullpath)
+
+	// path.Base returns "." for empty strings
+	if basename == "." {
+		return true
+	}
+
+	// doesn't detect index.whatever.html (multiple dots)
+	hasHtmlOrNoExtension, _ := regexp.MatchString("^(([^.]|\\.html?)+)$", basename)
+
+	if hasHtmlOrNoExtension {
+		return true
+	}
+
+	// hack to handle basenames with multiple dots: index.whatever.html
+	endsInHtml, _ := regexp.MatchString(".html?$", basename)
+
+	if endsInHtml {
+		return true
+	}
+
+	return false
+}
+
 func (p *Prerender) buildURLforFastHttp(ctx *fasthttp.RequestCtx) string {
 	url := p.Options.PrerenderURL
 
@@ -179,7 +198,6 @@ func (p *Prerender) buildURLforFastHttp(ctx *fasthttp.RequestCtx) string {
 	}
 
 	return url.String() + protocol + "://" + string(ctx.Host()) + string(ctx.Path()) + "?" + string(ctx.URI().QueryString())
-
 }
 
 func (p *Prerender) buildURL(or *http.Request) string {

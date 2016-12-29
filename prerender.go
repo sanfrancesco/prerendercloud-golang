@@ -218,8 +218,11 @@ func (p *Prerender) PreRenderHandlerFastHttp(ctx *fasthttp.RequestCtx) {
 		e.Check(err)
 
 		if p.Options.Token != "" {
-			ctx.Response.Header.Set("X-Prerender-Token", p.Options.Token)
+			req.Header.Set("X-Prerender-Token", p.Options.Token)
 		}
+
+		req.Header.Set("X-Original-User-Agent", string(ctx.Request.Header.Peek("User-Agent")))
+		req.Header.Set("User-Agent", "prerender-cloud-golang-middleware")
 
 		res, err := client.Do(req)
 
@@ -251,7 +254,9 @@ func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request) {
 	if p.Options.Token != "" {
 		req.Header.Set("X-Prerender-Token", p.Options.Token)
 	}
-	req.Header.Set("User-Agent", or.Header.Get("User-Agent"))
+
+	req.Header.Set("X-Original-User-Agent", or.Header.Get("User-Agent"))
+	req.Header.Set("User-Agent", "prerender-cloud-golang-middleware")
 	req.Header.Set("Content-Type", or.Header.Get("Content-Type"))
 	req.Header.Set("Accept-Encoding", "gzip")
 

@@ -1,10 +1,9 @@
 // Package prerender provides a Prerender.io handler implementation and a
 // Negroni middleware.
-package prerender
+package prerendercloud
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -181,52 +180,45 @@ func prerenderableExtension(fullpath string) bool {
 }
 
 func (p *Prerender) buildURLforFastHttp(ctx *fasthttp.RequestCtx) string {
-	url := p.Options.PrerenderURL
-
-	if !strings.HasSuffix(url.String(), "/") {
-		url.Path = url.Path + "/"
-	}
-
-	protocol := string(ctx.URI().Scheme())
-
-	if len(protocol) == 0 {
-		protocol = "http"
-	}
-
-	if fp := string(ctx.Request.Header.Peek("X-Forwarded-Proto")); fp != "" {
-		protocol = strings.Split(fp, ",")[0]
-	}
-
-	return url.String() + protocol + "://" + string(ctx.Host()) + string(ctx.Path()) + "?" + string(ctx.URI().QueryString())
+	return buildApiUrl(
+		p.Options.PrerenderURL.String(),
+		string(ctx.URI().Scheme()),
+		string(ctx.Host()),
+		string(ctx.Path()),
+		string(ctx.URI().QueryString()),
+	)
 }
 
-func (p *Prerender) buildURL(or *http.Request) string {
-	url := p.Options.PrerenderURL
+func (p *Prerender) buildURLforHttp(or *http.Request) string {
+	return buildApiUrl(
+		p.Options.PrerenderURL.String(),
+		or.URL.Scheme,
+		or.Host,
+		or.URL.Path,
+		or.URL.RawQuery,
+	)
+}
 
-	if !strings.HasSuffix(url.String(), "/") {
-		url.Path = url.Path + "/"
-	}
-
-	var protocol = or.URL.Scheme
-
-	if cf := or.Header.Get("CF-Visitor"); cf != "" {
-		match := cfSchemeRegex.FindStringSubmatch(cf)
-		if len(match) > 1 {
-			protocol = match[1]
-		}
+func buildApiUrl(prerenderServiceUrl, protocol, host, path, rawQuery string) string {
+	if !strings.HasSuffix(prerenderServiceUrl, "/") {
+		prerenderServiceUrl += "/"
 	}
 
 	if len(protocol) == 0 {
 		protocol = "http"
 	}
 
-	if fp := or.Header.Get("X-Forwarded-Proto"); fp != "" {
-		protocol = strings.Split(fp, ",")[0]
+	apiUrl := prerenderServiceUrl
+	apiUrl += protocol
+	apiUrl += "://"
+	apiUrl += host
+	apiUrl += path
+
+	if len(rawQuery) > 0 {
+		apiUrl += "?" + rawQuery
 	}
 
-	apiURL := url.String() + protocol + "://" + or.Host + or.URL.Path + "?" +
-		or.URL.RawQuery
-	return apiURL
+	return apiUrl
 }
 
 func (p *Prerender) PreRenderHandlerFastHttp(ctx *fasthttp.RequestCtx) {
@@ -266,7 +258,7 @@ func (p *Prerender) PreRenderHandlerFastHttp(ctx *fasthttp.RequestCtx) {
 func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request) {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", p.buildURL(or), nil)
+	req, err := http.NewRequest("GET", p.buildURLforHttp(or), nil)
 	e.Check(err)
 
 	if p.Options.Token != "" {
@@ -285,7 +277,6 @@ func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request) {
 
 	res, err := client.Do(req)
 
-	fmt.Println(res)
 	e.Check(err)
 
 	rw.Header().Set("Content-Type", res.Header.Get("Content-Type"))

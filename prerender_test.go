@@ -1,19 +1,6 @@
-package prerender
+package prerendercloud
 
-import (
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"testing"
-
-	"gopkg.in/jarcoal/httpmock.v1"
-)
-
-func TestMain(m *testing.M) {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	os.Exit(m.Run())
-}
+import "testing"
 
 func Test_prerenderableExtension(t *testing.T) {
 	if prerenderableExtension("") != true {
@@ -53,39 +40,30 @@ func Test_prerenderableExtension(t *testing.T) {
 	}
 }
 
-func Test_UserAgentRequest(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/https://www.example.com/", httpmock.NewStringResponder(200, `prerendered response`))
-
-	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "https://www.example.com/", nil)
-	req.Header.Set("User-Agent", "whatever")
-
-	NewOptions().NewPrerender().ServeHTTP(res, req, nil)
-
-	if len(res.Body.Bytes()) == 0 {
-		t.Error("Error, prerender.cloud not called")
+func Test_buildUrlWithoutProtocol(t *testing.T) {
+	apiUrl := buildApiUrl("https://service.prerender.cloud", "", "example.org", "", "")
+	if apiUrl != "https://service.prerender.cloud/http://example.org" {
+		t.Error("malformed API URL")
 	}
 }
 
-func Test_UserAgentStaticResourceRequest(t *testing.T) {
-	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "https://www.example.com/style.woff", nil)
-	req.Header.Set("User-Agent", "whatever")
-
-	NewOptions().NewPrerender().ServeHTTP(res, req, nil)
-
-	if len(res.Body.Bytes()) > 0 {
-		t.Error("Error, prerender.cloud called for non-proxy request")
+func Test_buildUrlWithProtocol(t *testing.T) {
+	apiUrl := buildApiUrl("https://service.prerender.cloud", "https", "example.org", "", "")
+	if apiUrl != "https://service.prerender.cloud/https://example.org" {
+		t.Error("malformed API URL")
 	}
 }
 
-func Test_NoUserAgentRequest(t *testing.T) {
-	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "https://www.example.com/", nil)
+func Test_buildUrlWithQuery(t *testing.T) {
+	apiUrl := buildApiUrl("https://service.prerender.cloud", "https", "example.org", "", "val=true")
+	if apiUrl != "https://service.prerender.cloud/https://example.org?val=true" {
+		t.Error("malformed API URL")
+	}
+}
 
-	NewOptions().NewPrerender().ServeHTTP(res, req, nil)
-
-	if len(res.Body.Bytes()) > 0 {
-		t.Error("Error, prerender.cloud called for non-proxy request")
+func Test_buildUrlWithQueryAndPath(t *testing.T) {
+	apiUrl := buildApiUrl("https://service.prerender.cloud", "https", "example.org", "/", "val=true")
+	if apiUrl != "https://service.prerender.cloud/https://example.org/?val=true" {
+		t.Error("malformed API URL")
 	}
 }

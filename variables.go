@@ -1,4 +1,4 @@
-package prerender
+package prerendercloud
 
 import "regexp"
 

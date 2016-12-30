@@ -1,4 +1,4 @@
-// Package prerender provides a Prerender.io handler implementation and a
+// Package prerender provides a Prerender.cloud handler implementation and a
 // Negroni middleware.
 package prerendercloud
 
@@ -19,8 +19,8 @@ import (
 	"google.golang.org/appengine/urlfetch"
 )
 
-// Options provides you with the ability to specify a custom Prerender.io URL
-// as well as a Prerender.io Token to include as an X-Prerender-Token header
+// Options provides you with the ability to specify a custom Prerender.cloud URL
+// as well as a Prerender.cloud Token to include as an X-Prerender-Token header
 // to the upstream server.
 type Options struct {
 	PrerenderURL   *url.URL
@@ -29,7 +29,7 @@ type Options struct {
 	BotsOnly       bool
 }
 
-// NewOptions generates a default Options struct pointing to the Prerender.io
+// NewOptions generates a default Options struct pointing to the Prerender.cloud
 // service, obtaining a Token from the environment variable PRERENDER_TOKEN.
 func NewOptions() *Options {
 	var url *url.URL
@@ -48,7 +48,7 @@ func NewOptions() *Options {
 	}
 }
 
-// Prerender exposes methods to validate and serve content from a Prerender.io
+// Prerender exposes methods to validate and serve content from a Prerender.cloud
 // upstream server.
 type Prerender struct {
 	Options *Options
@@ -73,6 +73,10 @@ func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
 	method := strings.ToLower(string(ctx.Method()))
 
 	if userAgent == "" || userAgent == "prerendercloud" {
+		return false
+	}
+
+	if string(ctx.Request.Header.Peek("X-Prerendered")) != "" {
 		return false
 	}
 
@@ -108,22 +112,21 @@ func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
 }
 
 // ShouldPrerender analyzes the request to determine whether it should be routed
-// to a Prerender.io upstream server.
+// to a Prerender.cloud upstream server.
 func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 	userAgent := strings.ToLower(or.Header.Get("User-Agent"))
+	method := strings.ToLower(or.Method)
 
 	// No user agent, don't prerender
-	if userAgent == "" {
+	if userAgent == "" || userAgent == "prerendercloud" {
 		return false
 	}
 
-	// No user agent, don't prerender
-	if userAgent == "prerendercloud" {
+	if or.Header.Get("X-Prerendered") != "" {
 		return false
 	}
 
-	// Not a GET or HEAD request, don't prerender
-	if or.Method != "GET" && or.Method != "HEAD" {
+	if method != "get" && method != "head" {
 		return false
 	}
 
@@ -190,8 +193,7 @@ func (p *Prerender) buildURLforFastHttp(ctx *fasthttp.RequestCtx) string {
 }
 
 func (p *Prerender) buildURLforHttp(or *http.Request) string {
-	return buildApiUrl(
-		p.Options.PrerenderURL.String(),
+	return buildApiUrl(p.Options.PrerenderURL.String(),
 		or.URL.Scheme,
 		or.Host,
 		or.URL.Path,
@@ -252,7 +254,7 @@ func (p *Prerender) PreRenderHandlerFastHttp(ctx *fasthttp.RequestCtx) {
 }
 
 // PreRenderHandler is a net/http compatible handler that proxies a request to
-// the configured Prerender.io URL.  All upstream requests are made with an
+// the configured Prerender.cloud URL.  All upstream requests are made with an
 // Accept-Encoding=gzip header.  Responses are provided either uncompressed or
 // gzip compressed based on the downstream requests Accept-Encoding header
 func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request) {

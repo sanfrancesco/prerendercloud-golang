@@ -4,6 +4,8 @@ package prerendercloud
 
 import (
 	"compress/gzip"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -62,7 +64,7 @@ func (o *Options) NewPrerender() *Prerender {
 // ServeHTTP allows Prerender to act as a Negroni middleware.
 func (p *Prerender) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	if p.ShouldPrerender(r) {
-		p.PreRenderHandler(rw, r)
+		p.PreRenderHandler(rw, r, next)
 	} else if next != nil {
 		next(rw, r)
 	}
@@ -223,41 +225,48 @@ func buildApiUrl(prerenderServiceUrl, protocol, host, path, rawQuery string) str
 	return apiUrl
 }
 
-func (p *Prerender) PreRenderHandlerFastHttp(ctx *fasthttp.RequestCtx) {
+func (p *Prerender) PreRenderHandlerFastHttp(ctx *fasthttp.RequestCtx) error {
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", p.buildURLforFastHttp(ctx), nil)
+	e.Check(err)
+
+	if p.Options.Token != "" {
+		req.Header.Set("X-Prerender-Token", p.Options.Token)
+	}
+
+	req.Header.Set("X-Original-User-Agent", string(ctx.Request.Header.Peek("User-Agent")))
+	req.Header.Set("User-Agent", "prerender-cloud-golang-middleware")
+
+	res, err := client.Do(req)
+	e.Check(err)
+	defer res.Body.Close()
+
+	if res.StatusCode >= 500 && res.StatusCode <= 511 {
+		fmt.Println("prerender.cloud server error", res.StatusCode)
+		return errors.New("prerendercloud server error")
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	e.Check(err)
+
 	fasthttp.CompressHandler(func(ctx *fasthttp.RequestCtx) {
-		client := &http.Client{}
-		req, err := http.NewRequest("GET", p.buildURLforFastHttp(ctx), nil)
-		e.Check(err)
-
-		if p.Options.Token != "" {
-			req.Header.Set("X-Prerender-Token", p.Options.Token)
-		}
-
-		req.Header.Set("X-Original-User-Agent", string(ctx.Request.Header.Peek("User-Agent")))
-		req.Header.Set("User-Agent", "prerender-cloud-golang-middleware")
-
-		res, err := client.Do(req)
-
-		e.Check(err)
-
-		defer res.Body.Close()
-
-		body, err := ioutil.ReadAll(res.Body)
-		e.Check(err)
-
+		ctx.SetStatusCode(res.StatusCode)
 		if len(res.Header["Content-Type"]) > 0 {
 			ctx.SetContentType(res.Header["Content-Type"][0])
 		}
 
 		ctx.SetBody(body)
 	})(ctx)
+
+	return nil
 }
 
 // PreRenderHandler is a net/http compatible handler that proxies a request to
 // the configured Prerender.cloud URL.  All upstream requests are made with an
 // Accept-Encoding=gzip header.  Responses are provided either uncompressed or
 // gzip compressed based on the downstream requests Accept-Encoding header
-func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request) {
+func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request, next http.HandlerFunc) {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", p.buildURLforHttp(or), nil)
@@ -278,12 +287,18 @@ func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request) {
 	}
 
 	res, err := client.Do(req)
-
 	e.Check(err)
+	defer res.Body.Close()
+
+	if res.StatusCode >= 500 && res.StatusCode <= 511 && next != nil {
+		fmt.Println("prerender.cloud server error", res.StatusCode)
+		if next != nil {
+			next(rw, or)
+			return
+		}
+	}
 
 	rw.Header().Set("Content-Type", res.Header.Get("Content-Type"))
-
-	defer res.Body.Close()
 
 	//Figure out whether the client accepts gzip responses
 	doGzip := strings.Contains(or.Header.Get("Accept-Encoding"), "gzip")
@@ -292,12 +307,14 @@ func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request) {
 	if doGzip && !isGzip {
 		// gzip raw response
 		rw.Header().Set("Content-Encoding", "gzip")
+		rw.WriteHeader(res.StatusCode)
 		gz := gzip.NewWriter(rw)
 		defer gz.Close()
 		io.Copy(gz, res.Body)
 		gz.Flush()
 
 	} else if !doGzip && isGzip {
+		rw.WriteHeader(res.StatusCode)
 		// gunzip response
 		gz, err := gzip.NewReader(res.Body)
 		e.Check(err)
@@ -306,7 +323,8 @@ func (p *Prerender) PreRenderHandler(rw http.ResponseWriter, or *http.Request) {
 	} else {
 		// Pass through, gzip/gzip or raw/raw
 		rw.Header().Set("Content-Encoding", res.Header.Get("Content-Encoding"))
+		rw.WriteHeader(res.StatusCode)
 		io.Copy(rw, res.Body)
-
 	}
+
 }

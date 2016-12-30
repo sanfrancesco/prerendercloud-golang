@@ -19,8 +19,8 @@ func main() {
 	prerenderCloud := prerenderCloudOptions.NewPrerender()
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
-		if prerenderCloud.ShouldPrerenderFastHttp(ctx) {
-			prerenderCloud.PreRenderHandlerFastHttp(ctx)
+		if prerenderCloud.ShouldPrerenderFastHttp(ctx) && prerenderCloud.PreRenderHandlerFastHttp(ctx) == nil {
+			return
 		} else {
 			ctx.SetContentType("text/html")
 			fmt.Fprintf(ctx, `

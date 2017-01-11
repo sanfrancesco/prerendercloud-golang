@@ -95,7 +95,7 @@ func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
 		bufferAgent := string(ctx.Request.Header.Peek("X-Bufferbot"))
 
 		// Buffer Agent or requesting an escaped fragment, request prerender
-		if bufferAgent != "" || string(ctx.FormValue("_escaped_fragment_")) != "" {
+		if bufferAgent != "" || strings.Contains(string(ctx.QueryArgs().QueryString()), "_escaped_fragment_") {
 			isRequestingPrerenderedPage = true
 		}
 
@@ -139,8 +139,12 @@ func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 	if p.Options.BotsOnly {
 		bufferAgent := or.Header.Get("X-Bufferbot")
 		isRequestingPrerenderedPage := false
+
+		// var isEscapedFragment bool
+		_, isEscapedFragment := or.URL.Query()["_escaped_fragment_"]
+
 		// Buffer Agent or requesting an escaped fragment, request prerender
-		if bufferAgent != "" || or.URL.Query().Get("_escaped_fragment_") != "" {
+		if bufferAgent != "" || isEscapedFragment {
 			isRequestingPrerenderedPage = true
 		}
 

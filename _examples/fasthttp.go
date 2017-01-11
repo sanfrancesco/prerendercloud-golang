@@ -15,6 +15,7 @@ func main() {
 	// not recommended, but if you must, uncomment this to
 	// restrict prerendering to bots and the _escaped_fragment_ query param
 	// prerenderCloudOptions.BotsOnly = true
+	// prerendercloud.CrawlerUserAgents = append(prerendercloud.CrawlerUserAgents, "googlebot")
 
 	prerenderCloud := prerenderCloudOptions.NewPrerender()
 

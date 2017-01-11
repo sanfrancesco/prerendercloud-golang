@@ -4,7 +4,7 @@ import "regexp"
 
 var cfSchemeRegex = regexp.MustCompile("\"scheme\":\"(http|https)\"")
 
-var crawlerUserAgents = [...]string{
+var CrawlerUserAgents = []string{
 	// probably better to use _escaped_fragment_ rather
 	// than risk cloaking penalties for the big 3
 	// read more here: https://developers.google.com/webmasters/ajax-crawling/docs/specification

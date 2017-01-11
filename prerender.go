@@ -100,7 +100,7 @@ func (p *Prerender) ShouldPrerenderFastHttp(ctx *fasthttp.RequestCtx) bool {
 		}
 
 		// Crawler, request prerender
-		for _, crawlerAgent := range crawlerUserAgents {
+		for _, crawlerAgent := range CrawlerUserAgents {
 			if strings.Contains(crawlerAgent, strings.ToLower(userAgent)) {
 				isRequestingPrerenderedPage = true
 				break
@@ -149,7 +149,7 @@ func (p *Prerender) ShouldPrerender(or *http.Request) bool {
 		}
 
 		// Cralwer, request prerender
-		for _, crawlerAgent := range crawlerUserAgents {
+		for _, crawlerAgent := range CrawlerUserAgents {
 			if strings.Contains(crawlerAgent, strings.ToLower(userAgent)) {
 				isRequestingPrerenderedPage = true
 				break

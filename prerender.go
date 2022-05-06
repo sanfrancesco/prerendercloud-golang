@@ -39,7 +39,7 @@ func NewOptions() *Options {
 	if os.Getenv("PRERENDER_SERVICE_URL") != "" {
 		url, _ = url.Parse(os.Getenv("PRERENDER_SERVICE_URL"))
 	} else {
-		url, _ = url.Parse("https://service.prerender.cloud/")
+		url, _ = url.Parse("https://service.headless-render-api.com/")
 	}
 
 	return &Options{

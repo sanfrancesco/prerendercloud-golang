@@ -29,7 +29,7 @@ func Test_NoUserAgentRequest(t *testing.T) {
 }
 
 func Test_WithUserAgentRequest(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/", httpmock.NewStringResponder(201, `prerendered response`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/", httpmock.NewStringResponder(201, `prerendered response`))
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://www.example.com/", nil)
@@ -60,7 +60,7 @@ func Test_WithPrerendercloudUserAgentRequest(t *testing.T) {
 }
 
 func Test_withHtmlExtension(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/deep/path.html", httpmock.NewStringResponder(200, `prerendered response`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/deep/path.html", httpmock.NewStringResponder(200, `prerendered response`))
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://www.example.com/deep/path.html", nil)
@@ -74,7 +74,7 @@ func Test_withHtmlExtension(t *testing.T) {
 }
 
 func withNoExtension(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/deep/path", httpmock.NewStringResponder(200, `prerendered response`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/deep/path", httpmock.NewStringResponder(200, `prerendered response`))
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://www.example.com/deep/path", nil)
@@ -113,7 +113,7 @@ func Test_WithUserAgentAndAlreadyPrerenderedRequest(t *testing.T) {
 }
 
 func Test_WithServerErrorAndNextMiddleware(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/", httpmock.NewStringResponder(500, `server error`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/", httpmock.NewStringResponder(500, `server error`))
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://www.example.com/", nil)
@@ -135,7 +135,7 @@ func Test_WithServerErrorAndNextMiddleware(t *testing.T) {
 }
 
 func Test_WithServerErrorAndNoNextMiddleware(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/", httpmock.NewStringResponder(501, `server error`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/", httpmock.NewStringResponder(501, `server error`))
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://www.example.com/", nil)

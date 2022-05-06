@@ -1,13 +1,12 @@
-![image](https://cloud.githubusercontent.com/assets/22159102/21554484/9d542f5a-cdc4-11e6-8c4c-7730a9e9e2d1.png)
-
 # prerendercloud-golang
 
-[![CircleCI](https://circleci.com/gh/sanfrancesco/prerendercloud-golang.svg?style=svg)](https://circleci.com/gh/sanfrancesco/prerendercloud-golang)
+<img align="right" src="https://cloud.githubusercontent.com/assets/22159102/21554484/9d542f5a-cdc4-11e6-8c4c-7730a9e9e2d1.png">
 
-Includes [negroni](https://github.com/codegangsta/negroni) middleware, and a [fasthttp](https://github.com/valyala/fasthttp) handler for prerendering javascript web pages/apps (single page apps or SPA) with [https://www.prerender.cloud/](https://www.prerender.cloud/)
+[negroni](https://github.com/codegangsta/negroni) middleware, and a [fasthttp](https://github.com/valyala/fasthttp) handler for pre-rendering JavaScript single page apps with [Headless-Render-API.com](https://headless-render-api.com) (formerly named prerender.cloud from 2016 - 2022)
+
 
 ## Set your API token via env var
-(get token after signing up at prerender.cloud)
+(get token after signing up at [Headless-Render-API.com](https://headless-render-api.com))
 
 ```bash
 PRERENDER_TOKEN="mySecretTokenFromPrerenderCloud" go run main.go

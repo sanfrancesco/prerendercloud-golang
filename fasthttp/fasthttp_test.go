@@ -106,7 +106,7 @@ func Test_NoUserAgentRequest(t *testing.T) {
 }
 
 func Test_WithUserAgentRequest(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/", httpmock.NewStringResponder(201, `prerendered response`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/", httpmock.NewStringResponder(201, `prerendered response`))
 
 	body, statusCode, err := makeRequest("http://www.example.com/", false, "example-user-agent")
 	if err != nil {
@@ -136,7 +136,7 @@ func Test_WithPrerendercloudUserAgentRequest(t *testing.T) {
 }
 
 func Test_withHtmlExtension(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/deep/path.html", httpmock.NewStringResponder(200, `prerendered response`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/deep/path.html", httpmock.NewStringResponder(200, `prerendered response`))
 
 	body, _, err := makeRequest("http://www.example.com/deep/path.html", false, "example-user-agent")
 	if err != nil {
@@ -149,7 +149,7 @@ func Test_withHtmlExtension(t *testing.T) {
 }
 
 func withNoExtension(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/deep/path", httpmock.NewStringResponder(200, `prerendered response`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/deep/path", httpmock.NewStringResponder(200, `prerendered response`))
 
 	body, _, err := makeRequest("http://www.example.com/deep/path", false, "example-user-agent")
 	if err != nil {
@@ -186,7 +186,7 @@ func Test_WithUserAgentAndAlreadyPrerenderedRequest(t *testing.T) {
 }
 
 func Test_WithServerErrorAndNextMiddleware(t *testing.T) {
-	httpmock.RegisterResponder("GET", "https://service.prerender.cloud/http://www.example.com/", httpmock.NewStringResponder(500, `server error`))
+	httpmock.RegisterResponder("GET", "https://service.headless-render-api.com/http://www.example.com/", httpmock.NewStringResponder(500, `server error`))
 
 	body, statusCode, err := makeRequest("http://www.example.com/", false, "example-user-agent")
 	if err != nil {

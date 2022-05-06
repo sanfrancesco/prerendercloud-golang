@@ -41,29 +41,29 @@ func Test_prerenderableExtension(t *testing.T) {
 }
 
 func Test_buildUrlWithoutProtocol(t *testing.T) {
-	apiUrl := buildApiUrl("https://service.prerender.cloud", "", "example.org", "", "")
-	if apiUrl != "https://service.prerender.cloud/http://example.org" {
+	apiUrl := buildApiUrl("https://service.headless-render-api.com", "", "example.org", "", "")
+	if apiUrl != "https://service.headless-render-api.com/http://example.org" {
 		t.Error("malformed API URL")
 	}
 }
 
 func Test_buildUrlWithProtocol(t *testing.T) {
-	apiUrl := buildApiUrl("https://service.prerender.cloud", "https", "example.org", "", "")
-	if apiUrl != "https://service.prerender.cloud/https://example.org" {
+	apiUrl := buildApiUrl("https://service.headless-render-api.com", "https", "example.org", "", "")
+	if apiUrl != "https://service.headless-render-api.com/https://example.org" {
 		t.Error("malformed API URL")
 	}
 }
 
 func Test_buildUrlWithQuery(t *testing.T) {
-	apiUrl := buildApiUrl("https://service.prerender.cloud", "https", "example.org", "", "val=true")
-	if apiUrl != "https://service.prerender.cloud/https://example.org?val=true" {
+	apiUrl := buildApiUrl("https://service.headless-render-api.com", "https", "example.org", "", "val=true")
+	if apiUrl != "https://service.headless-render-api.com/https://example.org?val=true" {
 		t.Error("malformed API URL")
 	}
 }
 
 func Test_buildUrlWithQueryAndPath(t *testing.T) {
-	apiUrl := buildApiUrl("https://service.prerender.cloud", "https", "example.org", "/", "val=true")
-	if apiUrl != "https://service.prerender.cloud/https://example.org/?val=true" {
+	apiUrl := buildApiUrl("https://service.headless-render-api.com", "https", "example.org", "/", "val=true")
+	if apiUrl != "https://service.headless-render-api.com/https://example.org/?val=true" {
 		t.Error("malformed API URL")
 	}
 }
